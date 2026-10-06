@@ -1,7 +1,7 @@
 --!nonstrict
 -- Snip — the flat top-center action bar (Windows 11 Snipping Tool style).
 --
--- [Фото|Видео] │ Область Окно Экран Все │ (video: 🔊 🎤) │ Цвет Текст QR │ ✕
+-- [Фото|Видео] │ Область Окно Экран Все │ Звук Микр. │ Цвет Текст QR │ Закрыть
 --
 -- Clicking a mode runs it immediately; the last mode is highlighted and Enter repeats it.
 -- Keys: 1–4 modes, 5–7 tools, Tab switches Фото/Видео, Esc closes (and unfreezes).
@@ -96,7 +96,7 @@ local function tile(id, glyph, label, opts)
   return ui.column({
     key = id,
     width = opts.width or 70,
-    height = 58,
+    height = 52,
     radius = 10,
     gap = 3,
     align = "center",
@@ -123,7 +123,7 @@ function render()
   local function add(node) table.insert(children, node) end
 
   -- Фото | Видео segmented switch
-  add(ui.row({ gap = 2, padding = 2, radius = 12, fill = "surface_variant/0.6", align = "center" }, {
+  add(ui.row({ gap = 2, padding = 2, radius = 12, fill = "on_surface/0.07", align = "center" }, {
     tile("kind-photo", "camera", "Фото", {
       width = 60, selected = prefs.kind == "photo", tooltip = "Снимок (Tab)",
       onClick = function() setKind("photo") end,
@@ -144,17 +144,17 @@ function render()
     }))
   end
 
-  if prefs.kind == "video" then
-    add(sep())
-    add(tile("audio-out", if prefs.audioOut then "volume" else "volume-off", "Звук", {
-      width = 56, selected = prefs.audioOut, tooltip = "Звук системы",
-      onClick = function() prefs.audioOut = not prefs.audioOut; save(); render() end,
-    }))
-    add(tile("audio-in", if prefs.audioIn then "microphone" else "microphone-off", "Микр.", {
-      width = 56, selected = prefs.audioIn, tooltip = "Микрофон",
-      onClick = function() prefs.audioIn = not prefs.audioIn; save(); render() end,
-    }))
-  end
+  -- Always present so the bar keeps its shape; only active for video.
+  local video = prefs.kind == "video"
+  add(sep())
+  add(tile("audio-out", if prefs.audioOut then "volume" else "volume-off", "Звук", {
+    width = 56, selected = video and prefs.audioOut, enabled = video, tooltip = "Звук системы",
+    onClick = function() prefs.audioOut = not prefs.audioOut; save(); render() end,
+  }))
+  add(tile("audio-in", if prefs.audioIn then "microphone" else "microphone-off", "Микр.", {
+    width = 56, selected = video and prefs.audioIn, enabled = video, tooltip = "Микрофон",
+    onClick = function() prefs.audioIn = not prefs.audioIn; save(); render() end,
+  }))
 
   add(sep())
   for _, t in TOOLS do
@@ -164,13 +164,14 @@ function render()
     }))
   end
 
-  add(ui.spacer({ flexGrow = 1 }))
+  add(sep())
   add(tile("close", "x", "Закрыть", {
     width = 64, tooltip = "Отмена (Esc)",
     onClick = function() panel.close() end,
   }))
 
-  panel.render(ui.row({ gap = 4, paddingH = 10, paddingV = 8, align = "center" }, children))
+  -- The host already pads the panel surface; no extra padding here.
+  panel.render(ui.row({ gap = 4, align = "center", justify = "center" }, children))
 end
 
 -- ── Lifecycle ──────────────────────────────────────────────────────────────
