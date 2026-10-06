@@ -2,9 +2,9 @@
   "settings.video_dir.label": "Recordings folder",
   "settings.fps.label": "Recording frame rate",
   "settings.codec.label": "Video codec",
-  "settings.codec.h264": "H.264 NVENC (most compatible)",
-  "settings.codec.hevc": "HEVC NVENC",
-  "settings.codec.av1": "AV1 NVENC (RTX 40+)",
+  "settings.codec.h264": "H.264 (most compatible)",
+  "settings.codec.hevc": "HEVC",
+  "settings.codec.av1": "AV1",
   "settings.ocr_lang.label": "OCR languages",
   "settings.ocr_lang.description": "Tesseract language codes joined with +, e.g. eng+rus."
 }

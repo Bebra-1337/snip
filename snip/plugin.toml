@@ -14,7 +14,7 @@ license = "MIT"
 icon = "screenshot"
 description = "Windows 11 style snipping: frozen screen, flat action bar, window highlight, Noctalia annotator, recording."
 tags = ["screenshot", "recording", "hyprland", "service", "panel"]
-dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "wf-recorder", "pipewire", "ffmpeg", "wl-clipboard", "libnotify"]
+dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard", "libnotify"]
 
 [[setting]]
 key = "video_dir"
@@ -34,11 +34,11 @@ max = 240
 key = "codec"
 type = "select"
 label_key = "settings.codec.label"
-default = "h264_nvenc"
+default = "h264"
 options = [
-  { value = "h264_nvenc", label_key = "settings.codec.h264" },
-  { value = "hevc_nvenc", label_key = "settings.codec.hevc" },
-  { value = "av1_nvenc", label_key = "settings.codec.av1" },
+  { value = "h264", label_key = "settings.codec.h264" },
+  { value = "hevc", label_key = "settings.codec.hevc" },
+  { value = "av1", label_key = "settings.codec.av1" },
 ]
 
 [[setting]]

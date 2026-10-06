@@ -3,7 +3,7 @@
 --
 -- Pipeline: open → snip.sh freeze (grim snapshot + wayfreeze) → menu panel → action.
 -- Photo actions crop the frozen snapshot and hand it to `noctalia msg annotate`; video
--- actions select an area, count down in the recbar panel, then run wf-recorder.
+-- actions select an area, count down in the recbar panel, then run gpu-screen-recorder.
 -- Long-running work (slurp, recording) runs as detached snip.sh processes that report
 -- back through `noctalia msg plugin bebra/snip:service all <event> <payload>` → onIpc.
 
@@ -142,7 +142,7 @@ local function startRecorder()
     audio.inp,
     noctalia.expandPath(cfg("video_dir") or "~/Videos/Screencasts"),
     cfg("fps") or 60,
-    cfg("codec") or "h264_nvenc"
+    cfg("codec") or "h264"
   )
 end
 

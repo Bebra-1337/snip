@@ -11,8 +11,9 @@ Snipping Tool из Windows 11 для Noctalia + Hyprland.
 - **Фото**: выбор поверх замороженного экрана. Окна подсвечиваются при наведении (`slurp -r`).
   Снимок вырезается из кадра, сделанного в момент нажатия, и открывается во встроенном
   редакторе Noctalia (`noctalia msg annotate`). Курсора на снимке нет.
-- **Видео**: область, окно или монитор → отсчёт 3-2-1 → `wf-recorder` (NVENC). Звук системы и микрофон
-  включаются тумблерами; если включены оба, микрофон пишется `pw-record` и сводится `ffmpeg`. Мини-панель
+- **Видео**: область, окно или монитор → отсчёт 3-2-1 → `gpu-screen-recorder`. Звук системы и микрофон включаются
+  тумблерами и сводятся в одну дорожку. На NixOS нужен `programs.gpu-screen-recorder.enable = true`
+  (setcap для `gsr-kms-server`), иначе каждый старт спрашивает пароль. Мини-панель
   показывает таймер и кнопку «Стоп». Повторное нажатие бинда тоже останавливает запись.
   Путь к файлу копируется в буфер обмена.
 - **Цвет** (`hyprpicker`), **Текст** (OCR, `tesseract`), **QR** (`zbarimg`): результат
@@ -35,4 +36,4 @@ hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("noctalia msg plugin bebra/snip:ser
 ```
 
 Зависимости: grim, slurp, wayfreeze, imagemagick, jq, hyprpicker, tesseract, zbar,
-wf-recorder, pipewire, ffmpeg, wl-clipboard, libnotify.
+gpu-screen-recorder, wl-clipboard, libnotify.

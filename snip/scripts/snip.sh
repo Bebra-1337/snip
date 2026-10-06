@@ -8,7 +8,7 @@
 #   color                  hyprpicker → clipboard
 #   ocr | qr               region → tesseract / zbarimg → clipboard
 #   rec-select <mode>      region|window|screen → emits recReady "<kind>|<target>|<showbar>"
-#   rec-start <kind> <target> <audioOut> <audioIn> <dir> <fps> <codec>   (wf-recorder)
+#   rec-start <kind> <target> <audioOut> <audioIn> <dir> <fps> <codec>   (gpu-screen-recorder)
 #   rec-stop
 #   rec-status             exit 0 while a recording runs
 #
@@ -22,7 +22,6 @@ FROZEN="$RUN/frozen.png"
 FREEZE_PID="$RUN/wayfreeze.pid"
 REC_PID="$RUN/rec.pid"
 REC_LOG="$RUN/rec.log"
-MIC_PID="$RUN/mic.pid"
 mkdir -p "$RUN"
 
 BORDER="${SNIP_BORDER:-#ffffff}"
@@ -181,65 +180,41 @@ rec_select() {
     emit recReady "$kind|$target|$show"
 }
 
-node_name() { wpctl inspect "$1" 2>/dev/null | sed -n 's/^.*node\.name = "\(.*\)"$/\1/p' | head -n1; }
-
-# wf-recorder takes one audio device: desktop audio goes in directly, the microphone is
-# recorded alongside with pw-record and mixed in after stop (video stream is copied).
 rec_start() { # kind target audioOut audioIn dir fps codec
-    need wf-recorder
+    need gpu-screen-recorder
     local kind="$1" target="$2" aout="$3" ain="$4" dir="$5" fps="$6" codec="$7"
-    local out raw args=() mic="" mic_wav="$RUN/mic.wav"
+    local out args=() audio=""
     alive "$REC_PID" && exit 0
     dir="${dir/#\~/$HOME}"
     mkdir -p "$dir"
     out="$dir/snip_$(date +%Y%m%d_%H%M%S).mp4"
-    raw="$out"
     if [ "$kind" = monitor ]; then
-        args+=(-o "$target")
+        args+=(-w "$target")
     else
         local x y w h
         IFS=', x' read -r x y w h <<< "$target"
-        # NVENC wants even dimensions.
-        args+=(-g "$x,$y $((w / 2 * 2))x$((h / 2 * 2))")
+        # Encoders want even dimensions.
+        args+=(-w region -region "$((w / 2 * 2))x$((h / 2 * 2))+$x+$y")
     fi
-    if [ "$ain" = true ]; then mic=$(node_name @DEFAULT_AUDIO_SOURCE@); fi
-    if [ "$aout" = true ]; then
-        args+=("--audio=$(node_name @DEFAULT_AUDIO_SINK@).monitor")
-    elif [ -n "$mic" ]; then
-        args+=("--audio=$mic"); mic=""
-    fi
-    if [ -n "$mic" ]; then
-        raw="$RUN/raw.mp4"
-        rm -f "$mic_wav"
-        pw-record --target "$mic" "$mic_wav" >/dev/null 2>&1 &
-        echo $! > "$MIC_PID"
-    fi
-    wf-recorder -y "${args[@]}" -c "$codec" -r "$fps" -f "$raw" > "$REC_LOG" 2>&1 &
+    # Both sources in one -a are mixed into a single track.
+    [ "$aout" = true ] && audio="default_output"
+    [ "$ain" = true ] && audio="${audio:+$audio|}default_input"
+    [ -n "$audio" ] && args+=(-a "$audio" -ac aac)
+    gpu-screen-recorder "${args[@]}" -c mp4 -k "$codec" -f "$fps" -cursor yes -o "$out" > "$REC_LOG" 2>&1 &
     echo $! > "$REC_PID"
     emit recStarted "$out"
     wait "$(cat "$REC_PID")"
     rm -f "$REC_PID"
-    if alive "$MIC_PID"; then kill -INT "$(cat "$MIC_PID")"; wait "$(cat "$MIC_PID")" 2>/dev/null; fi
-    rm -f "$MIC_PID"
-    if [ "$raw" != "$out" ] && [ -s "$raw" ]; then
-        if [ -s "$mic_wav" ]; then
-            ffmpeg -v error -y -i "$raw" -i "$mic_wav" \
-                -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:normalize=0[a]" \
-                -map 0:v -map "[a]" -c:v copy -c:a aac "$out" >> "$REC_LOG" 2>&1 || mv "$raw" "$out"
-        else
-            mv "$raw" "$out"
-        fi
-        rm -f "$raw" "$mic_wav"
-    fi
-    if [ -s "$out" ]; then
+    if [ -s "$out" ] && ffprobe -v error "$out" >/dev/null 2>&1; then
         printf 'file://%s' "$out" | wl-copy --type text/uri-list
         emit recStopped "$out"
     else
+        rm -f "$out"
         emit recFailed "$(tail -n 3 "$REC_LOG" | tr '\n' ' ')"
     fi
 }
 
-# wf-recorder finalizes on SIGINT; force-kill if it hangs so the bind always stops it.
+# gpu-screen-recorder finalizes on SIGINT; force-kill if it hangs so the bind always stops it.
 rec_stop() {
     alive "$REC_PID" || return 0
     local pid
