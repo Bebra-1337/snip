@@ -1,0 +1,78 @@
+# Snip — Windows 11 Snipping Tool for Noctalia + Hyprland.
+#
+# One keybind (`noctalia msg plugin bebra/snip:service all open`) freezes the screen and
+# opens a flat top-center menu. Screenshots open in Noctalia's own annotation editor.
+# The [[service]] owns all state and runs scripts/snip.sh; the panels are thin clients
+# that talk to it through the "command" state channel.
+
+id = "bebra/snip"
+name = "Snip"
+version = "0.1.0"
+plugin_api = 30
+author = "bebra"
+license = "MIT"
+icon = "screenshot"
+description = "Windows 11 style snipping: frozen screen, flat action bar, window highlight, Noctalia annotator, recording."
+tags = ["screenshot", "recording", "hyprland", "service", "panel"]
+dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "wf-recorder", "pipewire", "ffmpeg", "wl-clipboard", "libnotify"]
+
+[[setting]]
+key = "video_dir"
+type = "folder"
+label_key = "settings.video_dir.label"
+default = "~/Videos/Screencasts"
+
+[[setting]]
+key = "fps"
+type = "int"
+label_key = "settings.fps.label"
+default = 60
+min = 15
+max = 240
+
+[[setting]]
+key = "codec"
+type = "select"
+label_key = "settings.codec.label"
+default = "h264_nvenc"
+options = [
+  { value = "h264_nvenc", label_key = "settings.codec.h264" },
+  { value = "hevc_nvenc", label_key = "settings.codec.hevc" },
+  { value = "av1_nvenc", label_key = "settings.codec.av1" },
+]
+
+[[setting]]
+key = "ocr_lang"
+type = "string"
+label_key = "settings.ocr_lang.label"
+description_key = "settings.ocr_lang.description"
+default = "eng+rus"
+
+[[service]]
+id = "service"
+entry = "service.luau"
+
+# The flat action bar. Opened only by the service, right after the freeze is up.
+[[panel]]
+id = "menu"
+entry = "menu.luau"
+width = 920
+height = 76
+placement = "floating"
+position = "top_center"
+layer = "overlay"
+keyboard_focus = "exclusive"
+capture_keys = ["1", "2", "3", "4", "5", "6", "7", "Tab", "Return", "KP_Enter"]
+
+# Recording indicator: countdown, timer and stop. Never takes focus, survives other panels.
+[[panel]]
+id = "recbar"
+entry = "recbar.luau"
+width = 230
+height = 52
+placement = "floating"
+position = "top_center"
+layer = "overlay"
+persistent = true
+keyboard_focus = "none"
+dismiss_on_outside_click = false

@@ -1,0 +1,12 @@
+[[plugin]]
+id           = "bebra/snip"
+name         = "Snip"
+version      = "0.1.0"
+author       = "bebra"
+license      = "MIT"
+icon         = "screenshot"
+description  = "Windows 11 style snipping: frozen screen, flat action bar, window highlight, Noctalia annotator, recording."
+deprecated   = false
+plugin_api   = 30
+tags         = ["screenshot", "recording", "hyprland"]
+dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "wf-recorder", "pipewire", "ffmpeg", "wl-clipboard", "libnotify"]

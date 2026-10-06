@@ -1,0 +1,10 @@
+{
+  "settings.video_dir.label": "Папка для записей",
+  "settings.fps.label": "Частота кадров записи",
+  "settings.codec.label": "Видеокодек",
+  "settings.codec.h264": "H.264 NVENC (максимальная совместимость)",
+  "settings.codec.hevc": "HEVC NVENC",
+  "settings.codec.av1": "AV1 NVENC (RTX 40+)",
+  "settings.ocr_lang.label": "Языки распознавания текста",
+  "settings.ocr_lang.description": "Коды языков Tesseract через +, например eng+rus."
+}
