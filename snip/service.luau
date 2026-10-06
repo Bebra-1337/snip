@@ -25,6 +25,10 @@ local function cfg(key)
   return noctalia.getConfig(key)
 end
 
+local function tr(key, subst)
+  return if subst then noctalia.tr(key, subst) else noctalia.tr(key)
+end
+
 local function scriptArgv(args)
   local primary = noctalia.getColor("primary") or "#ffffff"
   local argv = {
@@ -43,7 +47,7 @@ end
 -- Detached: the script reports back over IPC.
 local function spawn(...)
   if not noctalia.runAsync(scriptArgv({ ... })) then
-    noctalia.notifyError("Ножницы", "Не удалось запустить snip.sh")
+    noctalia.notifyError(tr("notify.app"), tr("notify.spawn_failed"))
   end
 end
 
@@ -155,14 +159,30 @@ end
 local function recStopped(path)
   setPhase("idle")
   setRecbar(false)
-  noctalia.notify("Запись сохранена", `{path}\nПуть скопирован в буфер`)
+  noctalia.notify(tr("notify.saved"), tr("notify.saved_body", { path = path }))
 end
 
 local function recFailed(msg)
   setPhase("idle")
   setRecbar(false)
   log(`recording failed: {msg}`)
-  noctalia.notifyError("Запись не удалась", msg or "")
+  noctalia.notifyError(tr("notify.rec_failed"), msg or "")
+end
+
+-- snip.sh can't see Noctalia's language, so it sends "<key>|<value>" and the
+-- text is translated here. Copied OCR/QR text goes in the body.
+local BODY_IS_VALUE = { text = true, qr = true }
+
+local function scriptMessage(group, payload)
+  local key, value = string.match(payload or "", "^([%w_]+)|?(.*)$")
+  if not key then return end
+  if group == "error" then
+    noctalia.notifyError(tr("notify.app"), tr(`error.{key}`, { value = value }))
+  elseif BODY_IS_VALUE[key] then
+    noctalia.notify(tr(`notify.{key}`), value)
+  else
+    noctalia.notify(tr(`notify.{key}`, { value = value }))
+  end
 end
 
 local function dispatch(event, payload)
@@ -175,6 +195,7 @@ local function dispatch(event, payload)
   elseif event == "recStarted" then recStarted(payload)
   elseif event == "recStopped" then recStopped(payload)
   elseif event == "recFailed" then recFailed(payload)
+  elseif event == "notify" or event == "error" then scriptMessage(event, payload)
   else log(`unknown event: {event}`)
   end
 end

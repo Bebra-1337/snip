@@ -19,7 +19,7 @@ local function render()
   local body
   if rec.phase == "countdown" then
     body = {
-      ui.label({ text = "Запись через", fontSize = 13, color = "on_surface_variant" }),
+      ui.label({ text = noctalia.tr("rec.countdown"), fontSize = 13, color = "on_surface_variant" }),
       ui.label({ text = tostring(rec.n or ""), fontSize = 22, fontWeight = "bold", color = "primary" }),
     }
   else
@@ -34,7 +34,7 @@ local function render()
     glyph = "player-stop-filled",
     variant = "destructive",
     controlSize = "sm",
-    tooltip = if rec.phase == "countdown" then "Отмена" else "Остановить (Super+Shift+S)",
+    tooltip = noctalia.tr(if rec.phase == "countdown" then "rec.cancel" else "rec.stop"),
     onClick = function() send("stop") end,
   }))
   panel.render(ui.row({ gap = 8, paddingH = 12, paddingV = 8, align = "center" }, body))

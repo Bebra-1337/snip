@@ -14,7 +14,7 @@ license = "MIT"
 icon = "screenshot"
 description = "Windows 11 style snipping: frozen screen, flat action bar, window highlight, Noctalia annotator, recording."
 tags = ["screenshot", "recording", "hyprland", "service", "panel"]
-dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard", "libnotify"]
+dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard"]
 
 [[setting]]
 key = "video_dir"

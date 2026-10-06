@@ -13,6 +13,8 @@
 #   rec-status             exit 0 while a recording runs
 #
 # Colors for slurp come from env: SNIP_BORDER, SNIP_BOX (hex #rrggbb[aa]).
+# User-facing messages are sent as translation keys (notify/error "<key>|<value>");
+# the service translates them into Noctalia's current language.
 
 set -uo pipefail
 
@@ -29,9 +31,9 @@ BOX="${SNIP_BOX:-#ffffff22}"
 DIM="#00000066"
 
 emit() { noctalia msg plugin "$PLUGIN:service" all "$@" >/dev/null 2>&1 || true; }
-note() { notify-send -a "Ножницы" -i "$2" "$1" "${3:-}" 2>/dev/null || true; }
-fail() { note "Ножницы" dialog-error "$1"; exit 2; }
-need() { command -v "$1" >/dev/null 2>&1 || fail "Не найдено: $1"; }
+note() { emit notify "$1|${2:-}"; }
+fail() { emit error "$1|${2:-}"; exit 2; }
+need() { command -v "$1" >/dev/null 2>&1 || fail missing "$1"; }
 
 # ── Freeze ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +47,7 @@ unfreeze() {
 freeze() {
     need grim; need wayfreeze
     unfreeze
-    grim "$FROZEN" || fail "grim не смог снять экран"
+    grim "$FROZEN" || fail grim
     setsid wayfreeze --hide-cursor >/dev/null 2>&1 &
     echo $! > "$FREEZE_PID"
     # The menu must map after wayfreeze so it stacks above it on the overlay layer.
@@ -113,9 +115,9 @@ shot() {
     sel=$(select_geom "$1") || { unfreeze; exit 0; }
     [ "$1" = screen ] && geom="${sel#* }" || geom="$sel"
     out="$RUN/snip-$(date +%Y%m%d-%H%M%S).png"
-    crop "$geom" "$out" || { unfreeze; fail "Не удалось обрезать снимок"; }
+    crop "$geom" "$out" || { unfreeze; fail crop; }
     unfreeze
-    noctalia msg annotate "$out" >/dev/null || fail "noctalia annotate не открылся"
+    noctalia msg annotate "$out" >/dev/null || fail annotate
 }
 
 color() {
@@ -123,13 +125,13 @@ color() {
     unfreeze
     local hex
     hex=$(hyprpicker -a -f hex 2>/dev/null) || exit 0
-    [ -n "$hex" ] && note "Цвет $hex скопирован" color-select
+    [ -n "$hex" ] && note color "$hex"
 }
 
 region_crop() { # → path of cropped region or exit
     local geom out="$RUN/$1.png"
     geom=$(select_geom region) || { unfreeze; exit 0; }
-    crop "$geom" "$out" || { unfreeze; fail "Не удалось обрезать снимок"; }
+    crop "$geom" "$out" || { unfreeze; fail crop; }
     unfreeze
     echo "$out"
 }
@@ -140,9 +142,9 @@ ocr() {
     img=$(region_crop ocr) || exit $?
     [ -n "$img" ] || exit 0
     text=$(magick "$img" -resize 200% -colorspace Gray - | tesseract - - -l "${SNIP_OCR_LANG:-eng+rus}" 2>/dev/null | sed -e 's/[[:space:]]*$//' -e '/./,$!d')
-    [ -n "$text" ] || { note "Текст не найден" dialog-warning; exit 0; }
+    [ -n "$text" ] || { note no_text; exit 0; }
     printf '%s' "$text" | wl-copy
-    note "Текст скопирован" edit-copy "$(printf '%s' "$text" | head -c 200)"
+    note text "$(printf '%s' "$text" | head -c 200)"
 }
 
 qr() {
@@ -151,9 +153,9 @@ qr() {
     img=$(region_crop qr) || exit $?
     [ -n "$img" ] || exit 0
     text=$(zbarimg -q --raw "$img" 2>/dev/null)
-    [ -n "$text" ] || { note "QR-код не найден" dialog-warning; exit 0; }
+    [ -n "$text" ] || { note no_qr; exit 0; }
     printf '%s' "$text" | wl-copy
-    note "QR скопирован" edit-copy "$(printf '%s' "$text" | head -c 200)"
+    note qr "$(printf '%s' "$text" | head -c 200)"
 }
 
 # ── Recording ────────────────────────────────────────────────────────────────

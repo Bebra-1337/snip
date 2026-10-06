@@ -9,4 +9,4 @@ description  = "Windows 11 style snipping: frozen screen, flat action bar, windo
 deprecated   = false
 plugin_api   = 30
 tags         = ["screenshot", "recording", "hyprland"]
-dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard", "libnotify"]
+dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard"]

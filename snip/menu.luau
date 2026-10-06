@@ -1,25 +1,25 @@
 --!nonstrict
 -- Snip — the flat top-center action bar (Windows 11 Snipping Tool style).
 --
--- [Фото|Видео] │ Область Окно Экран Все │ Звук Микр. │ Цвет Текст QR │ Закрыть
+-- [Photo|Video] │ Region Window Screen All │ Sound Mic │ Color Text QR │ Close
 --
 -- Clicking a mode runs it immediately; the last mode is highlighted and Enter repeats it.
--- Keys: 1–4 modes, 5–7 tools, Tab switches Фото/Видео, Esc closes (and unfreezes).
--- Choices persist in the plugin data dir.
+-- Keys: 1–4 modes, 5–7 tools, Tab switches photo/video, Esc closes (and unfreezes).
+-- Choices persist in the plugin data dir. Strings come from translations/<lang>.json.
 
 local STATE_FILE = `{noctalia.pluginDataDir()}/menu.json`
 
 local MODES = {
-  { id = "region", glyph = "marquee-2", label = "Область", key = "1" },
-  { id = "window", glyph = "app-window", label = "Окно", key = "2" },
-  { id = "screen", glyph = "device-desktop", label = "Экран", key = "3" },
-  { id = "all", glyph = "devices", label = "Все", key = "4", photoOnly = true },
+  { id = "region", glyph = "marquee-2", label = "ui.mode.region", key = "1" },
+  { id = "window", glyph = "app-window", label = "ui.mode.window", key = "2" },
+  { id = "screen", glyph = "device-desktop", label = "ui.mode.screen", key = "3" },
+  { id = "all", glyph = "devices", label = "ui.mode.all", key = "4", photoOnly = true },
 }
 
 local TOOLS = {
-  { id = "color", glyph = "color-picker", label = "Цвет", key = "5" },
-  { id = "ocr", glyph = "text-recognition", label = "Текст", key = "6" },
-  { id = "qr", glyph = "qrcode", label = "QR", key = "7" },
+  { id = "color", glyph = "color-picker", label = "ui.tool.color", key = "5" },
+  { id = "ocr", glyph = "text-recognition", label = "ui.tool.ocr", key = "6" },
+  { id = "qr", glyph = "qrcode", label = "ui.tool.qr", key = "7" },
 }
 
 local prefs = { kind = "photo", mode = "region", audioOut = true, audioIn = false }
@@ -27,6 +27,10 @@ local hovered = nil
 local acted = false
 local seq = 0
 local render
+
+local function tr(key, subst)
+  return if subst then noctalia.tr(key, subst) else noctalia.tr(key)
+end
 
 -- ── Persistence ────────────────────────────────────────────────────────────
 
@@ -124,22 +128,23 @@ function render()
 
   -- Фото | Видео segmented switch
   add(ui.row({ gap = 2, padding = 2, radius = 12, fill = "on_surface/0.07", align = "center" }, {
-    tile("kind-photo", "camera", "Фото", {
-      width = 60, selected = prefs.kind == "photo", tooltip = "Снимок (Tab)",
+    tile("kind-photo", "camera", tr("ui.kind.photo"), {
+      width = 60, selected = prefs.kind == "photo", tooltip = tr("ui.kind.photo_tip"),
       onClick = function() setKind("photo") end,
     }),
-    tile("kind-video", "video", "Видео", {
-      width = 60, selected = prefs.kind == "video", tooltip = "Запись (Tab)",
+    tile("kind-video", "video", tr("ui.kind.video"), {
+      width = 60, selected = prefs.kind == "video", tooltip = tr("ui.kind.video_tip"),
       onClick = function() setKind("video") end,
     }),
   }))
   add(sep())
 
   for _, m in MODES do
-    add(tile(m.id, m.glyph, m.label, {
+    local label = tr(m.label)
+    add(tile(m.id, m.glyph, label, {
       selected = prefs.mode == m.id,
       enabled = modeEnabled(m),
-      tooltip = `{m.label} ({m.key})`,
+      tooltip = tr("ui.hotkey", { label = label, key = m.key }),
       onClick = function() run(m.id, true) end,
     }))
   end
@@ -147,26 +152,27 @@ function render()
   -- Always present so the bar keeps its shape; only active for video.
   local video = prefs.kind == "video"
   add(sep())
-  add(tile("audio-out", if prefs.audioOut then "volume" else "volume-off", "Звук", {
-    width = 56, selected = video and prefs.audioOut, enabled = video, tooltip = "Звук системы",
+  add(tile("audio-out", if prefs.audioOut then "volume" else "volume-off", tr("ui.audio.out"), {
+    width = 56, selected = video and prefs.audioOut, enabled = video, tooltip = tr("ui.audio.out_tip"),
     onClick = function() prefs.audioOut = not prefs.audioOut; save(); render() end,
   }))
-  add(tile("audio-in", if prefs.audioIn then "microphone" else "microphone-off", "Микр.", {
-    width = 56, selected = video and prefs.audioIn, enabled = video, tooltip = "Микрофон",
+  add(tile("audio-in", if prefs.audioIn then "microphone" else "microphone-off", tr("ui.audio.in"), {
+    width = 56, selected = video and prefs.audioIn, enabled = video, tooltip = tr("ui.audio.in_tip"),
     onClick = function() prefs.audioIn = not prefs.audioIn; save(); render() end,
   }))
 
   add(sep())
   for _, t in TOOLS do
-    add(tile(t.id, t.glyph, t.label, {
-      tooltip = `{t.label} ({t.key})`,
+    local label = tr(t.label)
+    add(tile(t.id, t.glyph, label, {
+      tooltip = tr("ui.hotkey", { label = label, key = t.key }),
       onClick = function() run(t.id, false) end,
     }))
   end
 
   add(sep())
-  add(tile("close", "x", "Закрыть", {
-    width = 64, tooltip = "Отмена (Esc)",
+  add(tile("close", "x", tr("ui.close"), {
+    width = 64, tooltip = tr("ui.close_tip"),
     onClick = function() panel.close() end,
   }))
 

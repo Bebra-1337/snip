@@ -36,4 +36,4 @@ hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("noctalia msg plugin bebra/snip:ser
 ```
 
 Зависимости: grim, slurp, wayfreeze, imagemagick, jq, hyprpicker, tesseract, zbar,
-gpu-screen-recorder, wl-clipboard, libnotify.
+gpu-screen-recorder, wl-clipboard.

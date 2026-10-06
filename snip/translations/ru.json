@@ -1,10 +1,67 @@
 {
-  "settings.video_dir.label": "Папка для записей",
-  "settings.fps.label": "Частота кадров записи",
-  "settings.codec.label": "Видеокодек",
-  "settings.codec.h264": "H.264 (максимальная совместимость)",
-  "settings.codec.hevc": "HEVC",
-  "settings.codec.av1": "AV1",
-  "settings.ocr_lang.label": "Языки распознавания текста",
-  "settings.ocr_lang.description": "Коды языков Tesseract через +, например eng+rus."
+  "ui": {
+    "kind": {
+      "photo": "Фото",
+      "photo_tip": "Снимок (Tab)",
+      "video": "Видео",
+      "video_tip": "Запись (Tab)"
+    },
+    "mode": {
+      "region": "Область",
+      "window": "Окно",
+      "screen": "Экран",
+      "all": "Все"
+    },
+    "audio": {
+      "out": "Звук",
+      "out_tip": "Звук системы",
+      "in": "Микр.",
+      "in_tip": "Микрофон"
+    },
+    "tool": {
+      "color": "Цвет",
+      "ocr": "Текст",
+      "qr": "QR"
+    },
+    "close": "Закрыть",
+    "close_tip": "Отмена (Esc)",
+    "hotkey": "{label} ({key})"
+  },
+  "rec": {
+    "countdown": "Запись через",
+    "cancel": "Отмена",
+    "stop": "Остановить запись"
+  },
+  "notify": {
+    "app": "Ножницы",
+    "saved": "Запись сохранена",
+    "saved_body": "{path}\nПуть скопирован в буфер",
+    "rec_failed": "Запись не удалась",
+    "spawn_failed": "Не удалось запустить snip.sh",
+    "color": "Цвет {value} скопирован",
+    "text": "Текст скопирован",
+    "no_text": "Текст не найден",
+    "qr": "QR-код скопирован",
+    "no_qr": "QR-код не найден"
+  },
+  "error": {
+    "missing": "Не найдено: {value}",
+    "grim": "grim не смог снять экран",
+    "crop": "Не удалось обрезать снимок",
+    "annotate": "Редактор noctalia не открылся"
+  },
+  "settings": {
+    "video_dir": { "label": "Папка для записей" },
+    "fps": { "label": "Частота кадров записи" },
+    "codec": {
+      "label": "Видеокодек",
+      "h264": "H.264 (максимальная совместимость)",
+      "hevc": "HEVC",
+      "av1": "AV1"
+    },
+    "ocr_lang": {
+      "label": "Языки распознавания текста",
+      "description": "Коды языков Tesseract через +, например eng+rus."
+    }
+  }
 }

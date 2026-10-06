@@ -1,10 +1,67 @@
 {
-  "settings.video_dir.label": "Recordings folder",
-  "settings.fps.label": "Recording frame rate",
-  "settings.codec.label": "Video codec",
-  "settings.codec.h264": "H.264 (most compatible)",
-  "settings.codec.hevc": "HEVC",
-  "settings.codec.av1": "AV1",
-  "settings.ocr_lang.label": "OCR languages",
-  "settings.ocr_lang.description": "Tesseract language codes joined with +, e.g. eng+rus."
+  "ui": {
+    "kind": {
+      "photo": "Photo",
+      "photo_tip": "Screenshot (Tab)",
+      "video": "Video",
+      "video_tip": "Recording (Tab)"
+    },
+    "mode": {
+      "region": "Region",
+      "window": "Window",
+      "screen": "Screen",
+      "all": "All"
+    },
+    "audio": {
+      "out": "Sound",
+      "out_tip": "System audio",
+      "in": "Mic",
+      "in_tip": "Microphone"
+    },
+    "tool": {
+      "color": "Color",
+      "ocr": "Text",
+      "qr": "QR"
+    },
+    "close": "Close",
+    "close_tip": "Cancel (Esc)",
+    "hotkey": "{label} ({key})"
+  },
+  "rec": {
+    "countdown": "Recording in",
+    "cancel": "Cancel",
+    "stop": "Stop recording"
+  },
+  "notify": {
+    "app": "Snip",
+    "saved": "Recording saved",
+    "saved_body": "{path}\nPath copied to clipboard",
+    "rec_failed": "Recording failed",
+    "spawn_failed": "Could not start snip.sh",
+    "color": "Color {value} copied",
+    "text": "Text copied",
+    "no_text": "No text found",
+    "qr": "QR code copied",
+    "no_qr": "No QR code found"
+  },
+  "error": {
+    "missing": "Missing dependency: {value}",
+    "grim": "grim could not capture the screen",
+    "crop": "Could not crop the screenshot",
+    "annotate": "Noctalia annotation editor did not open"
+  },
+  "settings": {
+    "video_dir": { "label": "Recordings folder" },
+    "fps": { "label": "Recording frame rate" },
+    "codec": {
+      "label": "Video codec",
+      "h264": "H.264 (most compatible)",
+      "hevc": "HEVC",
+      "av1": "AV1"
+    },
+    "ocr_lang": {
+      "label": "OCR languages",
+      "description": "Tesseract language codes joined with +, e.g. eng+rus."
+    }
+  }
 }
