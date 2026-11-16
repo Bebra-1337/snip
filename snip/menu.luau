@@ -4,7 +4,7 @@
 -- [Photo|Video] │ Region Window Screen All │ Sound Mic │ Color Text QR │ Close
 --
 -- Clicking a mode runs it immediately; the last mode is highlighted and Enter repeats it.
--- Keys: 1–4 modes, 5–7 tools, Tab switches photo/video, Esc closes.
+-- Keys: 1–4 modes, 5–7 tools, Tab switches photo/video, Esc closes (and unfreezes).
 -- Choices persist in the plugin data dir. Strings come from translations/<lang>.json.
 
 local STATE_FILE = `{noctalia.pluginDataDir()}/menu.json`
@@ -24,6 +24,7 @@ local TOOLS = {
 
 local prefs = { kind = "photo", mode = "region", audioOut = true, audioIn = false }
 local hovered = nil
+local acted = false
 local seq = 0
 local render
 
@@ -63,6 +64,7 @@ local function run(id, isMode)
     prefs.mode = id
     save()
   end
+  acted = true
   send("action", { kind = prefs.kind, mode = id, audioOut = prefs.audioOut, audioIn = prefs.audioIn })
   panel.close()
 end
@@ -197,7 +199,7 @@ function onKey(chord, pressed)
 end
 
 function onOpen(_context)
-  hovered = nil
+  acted, hovered = false, nil
   load()
   noctalia.state.set("menuOpen", true)
   render()
@@ -205,4 +207,5 @@ end
 
 function onClose()
   noctalia.state.set("menuOpen", false)
+  if not acted then send("cancel") end
 end
