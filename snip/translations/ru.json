@@ -48,7 +48,11 @@
     "missing": "Не найдено: {value}",
     "grim": "grim не смог снять экран",
     "crop": "Не удалось обрезать снимок",
-    "annotate": "Редактор noctalia не открылся"
+    "annotate": "Редактор noctalia не открылся",
+    "screenshot": "Noctalia не смогла сделать снимок",
+    "monitor": "Монитор не найден",
+    "window": "Окно не выбрано",
+    "window_focus": "Не удалось сфокусировать окно"
   },
   "settings": {
     "video_dir": { "label": "Папка для записей" },

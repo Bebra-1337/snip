@@ -2,15 +2,18 @@
 # snip.sh — shell half of bebra/snip. The Luau service starts it detached;
 # results go back to the service via `noctalia msg plugin bebra/snip:service all <event> <payload>`.
 #
-#   freeze                 grim snapshot of every output + wayfreeze on top
-#   unfreeze               drop the freeze
-#   shot   <mode>          region|window|screen|all → crop from snapshot → noctalia annotate
+#   photo <mode>           region|window|screen|all → noctalia msg screenshot-*
 #   color                  hyprpicker → clipboard
 #   ocr | qr               region → tesseract / zbarimg → clipboard
 #   rec-select <mode>      region|window|screen → emits recReady "<kind>|<target>|<showbar>"
 #   rec-start <kind> <target> <audioOut> <audioIn> <dir> <fps> <codec>   (gpu-screen-recorder)
 #   rec-stop
 #   rec-status             exit 0 while a recording runs
+#
+# Screenshots are taken by Noctalia itself (noctalia msg screenshot-*), so the
+# pointer never gets into them: window capture never includes it, region and
+# fullscreen rely on the compositor using a hardware cursor
+# (`cursor:no_hardware_cursors = false` in the Hyprland config).
 #
 # Colors for slurp come from env: SNIP_BORDER, SNIP_BOX (hex #rrggbb[aa]).
 # User-facing messages are sent as translation keys (notify/error "<key>|<value>");
@@ -20,8 +23,6 @@ set -uo pipefail
 
 PLUGIN="bebra/snip"
 RUN="${XDG_RUNTIME_DIR:-/tmp}/noctalia-snip"
-FROZEN="$RUN/frozen.png"
-FREEZE_PID="$RUN/wayfreeze.pid"
 REC_PID="$RUN/rec.pid"
 REC_LOG="$RUN/rec.log"
 mkdir -p "$RUN"
@@ -35,37 +36,12 @@ note() { emit notify "$1|${2:-}"; }
 fail() { emit error "$1|${2:-}"; exit 2; }
 need() { command -v "$1" >/dev/null 2>&1 || fail missing "$1"; }
 
-# ── Freeze ───────────────────────────────────────────────────────────────────
-
 alive() { [ -f "$1" ] && kill -0 "$(cat "$1")" 2>/dev/null; }
-
-unfreeze() {
-    if alive "$FREEZE_PID"; then kill "$(cat "$FREEZE_PID")" 2>/dev/null; fi
-    rm -f "$FREEZE_PID"
-}
-
-freeze() {
-    need grim; need wayfreeze
-    unfreeze
-    grim "$FROZEN" || fail grim
-    setsid wayfreeze --hide-cursor >/dev/null 2>&1 &
-    echo $! > "$FREEZE_PID"
-    # The menu must map after wayfreeze so it stacks above it on the overlay layer.
-    for _ in $(seq 40); do
-        hyprctl layers -j 2>/dev/null | grep -q '"wayfreeze"' && return 0
-        sleep 0.025
-    done
-}
 
 # ── Geometry ─────────────────────────────────────────────────────────────────
 # Geometry strings are "X,Y WxH" in layout (logical) coordinates.
 
 monitors() { hyprctl monitors -j; }
-
-# Layout origin and the scale grim renders the combined snapshot at.
-layout_info() {
-    monitors | jq -r '[ (map(.x) | min), (map(.y) | min), (map(.scale) | max) ] | @tsv'
-}
 
 window_boxes() {
     local ws
@@ -74,6 +50,15 @@ window_boxes() {
         sort_by(.focusHistoryID) | .[]
         | select(.mapped and (.hidden | not) and (.workspace.id as $w | $ws | index($w)))
         | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1]) \(.class)"'
+}
+
+window_targets() {
+    local ws
+    ws=$(monitors | jq -c '[.[] | .activeWorkspace.id, .specialWorkspace.id] | map(select(. != 0))')
+    hyprctl clients -j | jq -r --argjson ws "$ws" '
+        sort_by(.focusHistoryID) | .[]
+        | select(.mapped and (.hidden | not) and (.workspace.id as $w | $ws | index($w)))
+        | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])|\(.address)"'
 }
 
 monitor_under_cursor() {
@@ -88,51 +73,81 @@ monitor_under_cursor() {
 slurp_region() { slurp -d -b "$DIM" -c "$BORDER" -s "#00000000" -w 2 -f '%x,%y %wx%h'; }
 slurp_window() { window_boxes | slurp -r -b "$DIM" -c "$BORDER" -B "$BOX" -w 3 -f '%x,%y %wx%h'; }
 
-# select <mode> → prints geometry; for "screen" prints "NAME X,Y WxH"; "all" prints "all".
+# select <mode> → prints geometry; for "screen" prints "NAME X,Y WxH".
 select_geom() {
     case "$1" in
         region) need slurp; slurp_region ;;
         window) need slurp; slurp_window ;;
         screen) monitor_under_cursor ;;
-        all)    echo all ;;
         *)      return 1 ;;
     esac
 }
 
-crop() { # crop <geom> <out>
-    local geom="$1" out="$2" ox oy sc x y w h
-    if [ "$geom" = all ]; then cp "$FROZEN" "$out"; return; fi
-    read -r ox oy sc < <(layout_info)
-    IFS=', x' read -r x y w h <<< "$geom"
-    magick "$FROZEN" -crop "$(awk -v w="$w" -v h="$h" -v x="$x" -v y="$y" -v ox="$ox" -v oy="$oy" -v s="$sc" \
-        'BEGIN { printf "%dx%d+%d+%d", w*s, h*s, (x-ox)*s, (y-oy)*s }')" +repage "$out"
+# ── Screenshots ──────────────────────────────────────────────────────────────
+# Noctalia's own commands handle the capture and the editor. --no-show-cursor
+# starts the editor with the pointer off; window capture never includes it.
+
+focus_window() { # <address>
+    local addr="$1" current
+    hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1
+    current=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty')
+    [ "$current" = "$addr" ] && return 0
+    # Hyprland 0.55+ moved dispatchers to Lua; `hyprctl dispatch` is a no-op there.
+    hyprctl repl "hl.dispatch(hl.dsp.focus({ window = \"address:$addr\" }))" >/dev/null 2>&1
+    current=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty')
+    [ "$current" = "$addr" ]
 }
 
-# ── Actions ──────────────────────────────────────────────────────────────────
-
-shot() {
-    local sel geom out
-    sel=$(select_geom "$1") || { unfreeze; exit 0; }
-    [ "$1" = screen ] && geom="${sel#* }" || geom="$sel"
-    out="$RUN/snip-$(date +%Y%m%d-%H%M%S).png"
-    crop "$geom" "$out" || { unfreeze; fail crop; }
-    unfreeze
-    noctalia msg annotate "$out" >/dev/null || fail annotate
+noctalia_shot() { # <noctalia msg args...>
+    noctalia msg "$@" >/dev/null || fail screenshot
 }
+
+photo() {
+    # Let the menu panel unmap before the capture/selector.
+    sleep 0.15
+    case "$1" in
+        region)
+            noctalia_shot screenshot-region --annotate --no-show-cursor
+            ;;
+        screen)
+            local sel name
+            sel=$(monitor_under_cursor) || exit 0
+            name="${sel%% *}"
+            [ -n "$name" ] || fail monitor
+            noctalia_shot screenshot-fullscreen --annotate --no-show-cursor "$name"
+            ;;
+        all)
+            noctalia_shot screenshot-fullscreen --annotate --no-show-cursor all
+            ;;
+        window)
+            need slurp
+            local sel addr
+            sel=$(window_targets | slurp -r -b "$DIM" -c "$BORDER" -B "$BOX" -w 3 -f '%x,%y %wx%h|%l') || exit 0
+            [ -n "$sel" ] || exit 0
+            addr="${sel##*|}"
+            [ -n "$addr" ] || fail window
+            focus_window "$addr" || fail window_focus
+            sleep 0.15
+            noctalia_shot screenshot-window --annotate --no-show-cursor
+            ;;
+        *) return 1 ;;
+    esac
+}
+
+# ── Tools ────────────────────────────────────────────────────────────────────
 
 color() {
     need hyprpicker
-    unfreeze
     local hex
     hex=$(hyprpicker -a -f hex 2>/dev/null) || exit 0
     [ -n "$hex" ] && note color "$hex"
 }
 
-region_crop() { # → path of cropped region or exit
+region_crop() { # <name> → path of a live region capture
+    need slurp; need grim
     local geom out="$RUN/$1.png"
-    geom=$(select_geom region) || { unfreeze; exit 0; }
-    crop "$geom" "$out" || { unfreeze; fail crop; }
-    unfreeze
+    geom=$(select_geom region) || exit 0
+    grim -g "$geom" "$out" || fail crop
     echo "$out"
 }
 
@@ -175,8 +190,7 @@ covers_bar() { # covers_bar <kind> <target>
 
 rec_select() {
     local sel kind target show=1
-    sel=$(select_geom "$1") || { unfreeze; exit 0; }
-    unfreeze
+    sel=$(select_geom "$1") || exit 0
     if [ "$1" = screen ]; then kind=monitor; target="${sel%% *}"; else kind=region; target="$sel"; fi
     covers_bar "$kind" "$target" && show=0
     emit recReady "$kind|$target|$show"
@@ -227,9 +241,7 @@ rec_stop() {
 }
 
 case "${1:-}" in
-    freeze)     freeze ;;
-    unfreeze)   unfreeze ;;
-    shot)       shot "${2:-region}" ;;
+    photo)      photo "${2:-region}" ;;
     color)      color ;;
     ocr)        ocr ;;
     qr)         qr ;;
@@ -237,5 +249,5 @@ case "${1:-}" in
     rec-start)  shift; rec_start "$@" ;;
     rec-stop)   rec_stop ;;
     rec-status) alive "$REC_PID" ;;
-    *)          echo "usage: snip.sh freeze|unfreeze|shot|color|ocr|qr|rec-select|rec-start|rec-stop|rec-status" >&2; exit 1 ;;
+    *)          echo "usage: snip.sh photo|color|ocr|qr|rec-select|rec-start|rec-stop|rec-status" >&2; exit 1 ;;
 esac

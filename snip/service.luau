@@ -1,9 +1,9 @@
 --!nonstrict
 -- Snip — headless service.
 --
--- Pipeline: open → snip.sh freeze (grim snapshot + wayfreeze) → menu panel → action.
--- Photo actions crop the frozen snapshot and hand it to `noctalia msg annotate`; video
--- actions select an area, count down in the recbar panel, then run gpu-screen-recorder.
+-- Pipeline: open → menu panel → action.
+-- Photo actions call Noctalia's own screenshot commands (window/region/fullscreen),
+-- video actions select an area, count down in the recbar panel, then run gpu-screen-recorder.
 -- Long-running work (slurp, recording) runs as detached snip.sh processes that report
 -- back through `noctalia msg plugin bebra/snip:service all <event> <payload>` → onIpc.
 
@@ -93,16 +93,10 @@ local function open()
     return
   end
   if noctalia.state.get("menuOpen") == true then
-    noctalia.togglePanel(MENU) -- closes; menu's onClose unfreezes
+    noctalia.togglePanel(MENU) -- closes
     return
   end
-  noctalia.runAsync(scriptArgv({ "freeze" }), function(res)
-    if res.exitCode ~= 0 then
-      log(`freeze failed: {res.stderr}`)
-      return
-    end
-    noctalia.togglePanel(MENU)
-  end, 5000)
+  noctalia.togglePanel(MENU)
 end
 
 local function action(p)
@@ -113,9 +107,7 @@ local function action(p)
     audio.out, audio.inp = p.audioOut == true, p.audioIn == true
     spawn("rec-select", p.mode)
   elseif PHOTO_MODES[p.mode] then
-    spawn("shot", p.mode)
-  else
-    spawn("unfreeze")
+    spawn("photo", p.mode)
   end
 end
 
@@ -188,7 +180,6 @@ end
 local function dispatch(event, payload)
   if event == "open" then open()
   elseif event == "action" then action(payload)
-  elseif event == "cancel" then spawn("unfreeze")
   elseif event == "stop" then
     if rec.phase == "countdown" then open() else stopRecording() end
   elseif event == "recReady" then recReady(payload)

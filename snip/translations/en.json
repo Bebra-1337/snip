@@ -48,7 +48,11 @@
     "missing": "Missing dependency: {value}",
     "grim": "grim could not capture the screen",
     "crop": "Could not crop the screenshot",
-    "annotate": "Noctalia annotation editor did not open"
+    "annotate": "Noctalia annotation editor did not open",
+    "screenshot": "Noctalia could not take the screenshot",
+    "monitor": "No monitor found",
+    "window": "No window selected",
+    "window_focus": "Could not focus the window"
   },
   "settings": {
     "video_dir": { "label": "Recordings folder" },

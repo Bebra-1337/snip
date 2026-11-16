@@ -1,20 +1,20 @@
 # Snip — Windows 11 Snipping Tool for Noctalia + Hyprland.
 #
-# One keybind (`noctalia msg plugin bebra/snip:service all open`) freezes the screen and
-# opens a flat top-center menu. Screenshots open in Noctalia's own annotation editor.
-# The [[service]] owns all state and runs scripts/snip.sh; the panels are thin clients
-# that talk to it through the "command" state channel.
+# One keybind (`noctalia msg plugin bebra/snip:service all open`) opens a flat top-center
+# menu. Screenshots are taken by Noctalia's own screenshot commands and open in its
+# annotation editor. The [[service]] owns all state and runs scripts/snip.sh; the panels
+# are thin clients that talk to it through the "command" state channel.
 
 id = "bebra/snip"
 name = "Snip"
-version = "0.1.0"
+version = "0.2.0"
 plugin_api = 30
 author = "bebra"
 license = "MIT"
 icon = "screenshot"
-description = "Windows 11 style snipping: frozen screen, flat action bar, window highlight, Noctalia annotator, recording."
+description = "Windows 11 style snipping: flat action bar, window highlight, screenshots via Noctalia, recording."
 tags = ["screenshot", "recording", "hyprland", "service", "panel"]
-dependencies = ["grim", "slurp", "wayfreeze", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard"]
+dependencies = ["grim", "slurp", "imagemagick", "jq", "hyprpicker", "tesseract", "zbar", "gpu-screen-recorder", "wl-clipboard"]
 
 [[setting]]
 key = "video_dir"
@@ -52,7 +52,7 @@ default = "eng+rus"
 id = "service"
 entry = "service.luau"
 
-# The flat action bar. Opened only by the service, right after the freeze is up.
+# The flat action bar. Opened only by the service.
 [[panel]]
 id = "menu"
 entry = "menu.luau"
